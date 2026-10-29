@@ -5,6 +5,7 @@ Writes out_dir/screen.webm and out_dir/marks.json (event times, used to speed up
 On-screen narration + a spotlight outline are injected into the page while recording.
 """
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -59,12 +60,20 @@ def main(video, out):
         pg.set_input_files("#file", video)
         pg.fill("#prompt", "")
         pg.type("#prompt", PROMPT, delay=15)
-        w(1200)
+        w(800)
+        say("Creator's own estimate for editing this by hand: 120 minutes")
+        pg.fill("#manual", "120")
+        w(2500)
         mark("click_create")
         pg.click("#go")
         say("Plan job: Muse Voice Transcribe → Muse Spark 1.3 → SAM 3.1 → Muse Image")
         spot("#steps")
-        pg.wait_for_url("**/plan-editor.html*", timeout=20 * 60 * 1000)
+        # fail fast if the plan job fails (the upload page shows the error in #msg)
+        pg.wait_for_function("location.pathname.includes('plan-editor') || "
+                             "document.querySelector('#msg.err:not([hidden])')", timeout=20 * 60 * 1000)
+        if "plan-editor" not in pg.url:
+            raise RuntimeError("plan job failed: " + pg.inner_text("#msg"))
+        pg.wait_for_load_state()
         mark("editor_open")
         pg.wait_for_selector(".seg", timeout=60000)
         w(1500)
@@ -118,9 +127,13 @@ def main(video, out):
             spot(f".seg[data-id={sid}]")
             w(3800 if i < 4 or note else 2600)
             if i == 0:
-                cap = el.locator("textarea").first
-                say("Edit caption text — timestamps stay locked")
-                cap.fill("Was there ONE turning point in World War II? No.")
+                # clean stutters in the real spoken words (never replace what was said)
+                caps = el.locator("textarea")
+                k = next((j for j in range(caps.count())
+                          if re.search(r"\b(\w+) \1\b", caps.nth(j).input_value(), re.I)), 0)
+                cap = caps.nth(k)
+                say("Edit caption text (here: remove stutters) — timestamps stay locked")
+                cap.fill(re.sub(r"\b(\w+)(?: \1\b)+", r"\1", cap.input_value(), flags=re.I))
                 cap.blur()
                 w(3000)
                 say("Preview one segment")
@@ -156,9 +169,12 @@ def main(video, out):
         w(3500)
         pg.evaluate("document.querySelector('#result video').play()")
         w(6000)
-        say("Every Meta model call is logged with its cost — this whole short cost about $0.55")
+        say("Every Meta model call is logged with its cost")
         spot("#result table")
-        w(6000)
+        w(5000)
+        say("Time saved: measured MuseCut time (machine + your review) vs 120 min by hand")
+        spot("#result table:last-of-type")
+        w(7000)
         say("Plan is now locked: further edits are rejected")
         spot("#segs")
         w(3000)

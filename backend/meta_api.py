@@ -25,17 +25,20 @@ def client():
     return _client
 
 
-def _retry(fn, attempts=4):
+def _retry(fn, attempts=7):
+    """Retry transient failures (rate limit, 5xx, network/DNS) with capped exponential backoff:
+    1, 2, 4, 8, 16, 30 s -> rides out ~1 min of network loss before failing the job."""
     for i in range(attempts):
         try:
             return fn()
         except Exception as e:  # network / 429 / 5xx
             msg = str(e)
             transient = any(s in msg for s in ("429", "500", "502", "503", "504", "timed out",
-                                                 "Connection", "Timeout"))
+                                                 "Connection", "Timeout", "NameResolution",
+                                                 "Temporary failure"))
             if i == attempts - 1 or not transient:
                 raise
-            time.sleep(2 ** i + 0.5)
+            time.sleep(min(2 ** i, 30))
 
 
 # ---------- Muse Voice Transcribe ----------

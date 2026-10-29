@@ -32,6 +32,9 @@ def init():
               status TEXT, latency_ms INTEGER);
             """
         )
+        cols = [r[1] for r in c.execute("PRAGMA table_info(projects)")]
+        if "manual_minutes" not in cols:
+            c.execute("ALTER TABLE projects ADD COLUMN manual_minutes INTEGER")
 
 
 def project_dir(pid):
@@ -40,12 +43,14 @@ def project_dir(pid):
     return d
 
 
-def create_project(prompt, target, video_path, probe, pid=None):
+def create_project(prompt, target, video_path, probe, pid=None, manual_minutes=None):
     pid = pid or "p_" + uuid.uuid4().hex[:10]
     with _lock, conn() as c:
         c.execute(
-            "INSERT INTO projects VALUES(?,?,?,?,?,?,?)",
-            (pid, time.time(), prompt, target, str(video_path), json.dumps(probe), "uploaded"),
+            "INSERT INTO projects(id,created_at,prompt,target_duration_sec,video_path,probe_json,status,"
+            "manual_minutes) VALUES(?,?,?,?,?,?,?,?)",
+            (pid, time.time(), prompt, target, str(video_path), json.dumps(probe), "uploaded",
+             manual_minutes),
         )
     return pid
 

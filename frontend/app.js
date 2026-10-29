@@ -29,6 +29,7 @@ const MuseCut = (() => {
         mark("upload", "on");
         const fd = new FormData();
         fd.append("video", chosen); fd.append("prompt", $("#prompt").value); fd.append("target_duration_sec", $("#target").value);
+        if (+$("#manual").value > 0) fd.append("manual_edit_minutes", Math.round(+$("#manual").value));
         const p = await api("/api/projects", { method: "POST", body: fd });
         mark("upload", "done");
         await api(`/api/projects/${p.project_id}/plan`, { method: "POST" });
@@ -278,8 +279,27 @@ const MuseCut = (() => {
         <h2 style="margin-top:16px">Meta models used</h2>
         <table><tr><th>Model</th><th>Calls</th><th>Failed/retried</th><th>Est. cost</th></tr>${rows}
         <tr><td><b>Total</b></td><td></td><td></td><td><b>$${e.cost_summary.total_usd.toFixed(4)}</b></td></tr></table>
+        ${timeSaved(e.time_saved)}
         ${e.render_notes.length ? `<h2 style="margin-top:16px">Render log</h2><ul class="small">${e.render_notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
       </div>`;
+  }
+
+  function timeSaved(t) {
+    if (!t) return "";
+    const m = (s) => (s / 60).toFixed(1) + " min", st = t.stages;
+    const head = t.manual_minutes
+      ? `<div class="row" style="gap:28px;margin:6px 0 10px"><div><div class="small muted">By hand (${t.manual_source})</div><div style="font-size:28px;font-weight:800">${t.manual_minutes} min</div></div>
+         <div><div class="small muted">With MuseCut (measured, incl. your review)</div><div style="font-size:28px;font-weight:800;color:var(--ok)">${m(t.total_s)}</div></div>
+         <div><div class="small muted">Saved</div><div style="font-size:28px;font-weight:800;color:var(--accent2)">${t.saved_minutes} min · ${t.speedup_x}× faster</div></div></div>` : "";
+    return `<h2 style="margin-top:16px">Time saved</h2>${head}
+      <table><tr><th>Step</th><th>Measured</th></tr>
+      <tr><td>Transcribe (Muse Voice)</td><td>${m(st.transcribe_s)}</td></tr>
+      <tr><td>Edit Plan (Muse Spark)</td><td>${m(st.spark_plan_s)}</td></tr>
+      <tr><td>Face tracking (SAM 3.1)</td><td>${m(st.sam_tracking_s)}</td></tr>
+      <tr><td>Thumbnails + B-roll (Muse Image)</td><td>${m(st.muse_image_s)}</td></tr>
+      <tr><td>Your review in the plan editor</td><td>${m(st.human_review_s)}</td></tr>
+      <tr><td>Render (FFmpeg)</td><td>${m(st.render_s)}</td></tr>
+      <tr><td><b>Total</b></td><td><b>${m(t.total_s)}</b></td></tr></table>`;
   }
 
   return { initUpload, initEditor };

@@ -34,7 +34,8 @@ def _url(path):
 
 @app.post("/api/projects")
 def create_project(video: UploadFile = File(...), prompt: str = Form(...),
-                   target_duration_sec: int = Form(60)):
+                   target_duration_sec: int = Form(60),
+                   manual_edit_minutes: int | None = Form(None)):
     if target_duration_sec not in (60, 90):
         raise HTTPException(422, "target_duration_sec must be 60 or 90")
     if not prompt.strip():
@@ -53,7 +54,11 @@ def create_project(video: UploadFile = File(...), prompt: str = Form(...),
     except RuntimeError:
         shutil.rmtree(d, ignore_errors=True)
         raise HTTPException(422, "could not read video file")
-    db.create_project(prompt.strip(), target_duration_sec, dst, info, pid=pid)
+    if manual_edit_minutes is not None and not 1 <= manual_edit_minutes <= 24 * 60:
+        shutil.rmtree(d, ignore_errors=True)
+        raise HTTPException(422, "manual_edit_minutes must be between 1 and 1440")
+    db.create_project(prompt.strip(), target_duration_sec, dst, info, pid=pid,
+                      manual_minutes=manual_edit_minutes)
     return {"project_id": pid, "probe": info}
 
 
@@ -154,6 +159,7 @@ def approve(pid: str):
     if not plan:
         raise HTTPException(404, "no plan yet")
     if plan["status"] != "approved":
+        pipeline.stamp(pid, "approved")
         plan["status"] = "approved"
         try:
             pipeline.save_plan(plan)
@@ -176,7 +182,7 @@ def render_status(pid: str):
 
 @app.get("/api/projects/{pid}/export")
 def export(pid: str):
-    _project(pid)
+    proj = _project(pid)
     d = pipeline.paths(pid)["dir"]
     res_f = d / "render_result.json"
     if not res_f.exists():
@@ -185,7 +191,8 @@ def export(pid: str):
     plan = pipeline.load_plan(pid)
     (d / "plan_export.json").write_text(json.dumps(plan, indent=1))
     costs = db.cost_log(pid)
-    (d / "cost_log.json").write_text(json.dumps(costs, indent=1))
+    (d / "cost_log.json").write_text(json.dumps(
+        {"calls": costs, "time_saved": pipeline.time_report(pid, proj.get("manual_minutes"))}, indent=1))
     post = f"{plan['title']}\n\n{plan['post_copy']}\n\n" + " ".join("#" + h for h in plan["hashtags"])
     (d / "post_copy.txt").write_text(post)
     thumb = next(t for t in plan["thumbnail_options"] if t["id"] == plan["thumbnail_selected"])
@@ -203,6 +210,7 @@ def export(pid: str):
         "cost_summary": {"total_usd": round(sum(v["usd"] for v in by_model.values()), 4),
                          "by_model": by_model},
         "chapters": plan.get("chapters", []),
+        "time_saved": pipeline.time_report(pid, proj.get("manual_minutes")),
     }
 
 

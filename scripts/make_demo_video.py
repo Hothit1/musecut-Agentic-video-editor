@@ -126,7 +126,22 @@ def main(demo_dir, pid):
               ("Plan JSON is schema-validated · render only runs after Approve", 30, (154, 161, 178)),
               ("Roadmap v2: dubbing, lip-sync, multiple shorts per video", 30, (154, 161, 178))]
     card(work / "c3.png", lines)
+    ts = exp.get("time_saved")
+    if ts and ts.get("manual_minutes"):
+        st = ts["stages"]
+        tl = [("Impact: time to a ready-to-post 60 s short", 52, (255, 255, 255)),
+              (f"By hand: {ts['manual_minutes']} min  (creator's estimate)", 44, (154, 161, 178)),
+              (f"With MuseCut: {ts['total_s']/60:.1f} min  (measured on this video)", 44, (60, 207, 142)),
+              (f"machine {ts['machine_s']/60:.1f} min  +  plan review {st['human_review_s']/60:.1f} min", 30,
+               (154, 161, 178)),
+              ("(review in this recording is scripted; a real creator's review time is measured the same way)",
+               24, (154, 161, 178)),
+              (f"→ {ts['saved_minutes']:.0f} minutes saved · {ts['speedup_x']:.0f}× faster", 56, (255, 212, 0))]
+        card(work / "c4.png", tl)
+        still(work / "c4.png", 8, work / "p9.mp4")
     still(work / "c3.png", 7, work / "p8.mp4"); parts.append("p8.mp4")
+    if (work / "p9.mp4").exists() and ts and ts.get("manual_minutes"):
+        parts.insert(parts.index("p8.mp4"), "p9.mp4")
 
     (work / "list.txt").write_text("".join(f"file '{p}'\n" for p in parts))
     out = dd / "musecut_demo.mp4"
