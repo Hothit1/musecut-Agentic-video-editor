@@ -10,6 +10,8 @@ import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
+import numpy as np
+
 from . import meta_api
 from .ingest import extract_wav
 
@@ -17,13 +19,36 @@ MIN_UNIT, MAX_UNIT = 2.5, 15.0
 PAD = 0.12
 
 
-def detect_silences(wav, noise_db=-32, min_sil=0.3):
-    p = subprocess.run(["ffmpeg", "-v", "info", "-i", str(wav), "-af",
-                        f"silencedetect=noise={noise_db}dB:d={min_sil}", "-f", "null", "-"],
-                       capture_output=True, text=True)
-    starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", p.stderr)]
-    ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", p.stderr)]
-    return list(zip(starts, ends))
+def pauses_from_db(db, hop, rel_db=6.0, min_pause=0.25):
+    """Pauses = runs of frames quieter than (15th-percentile level + rel_db), capped below the
+    median so speech is never counted. Adapts to a music bed or room noise, unlike a fixed
+    -32 dB gate. db: per-frame level in dBFS, hop: frame length in seconds."""
+    thr = min(np.percentile(db, 15) + rel_db, np.median(db) - 3.0)
+    low = db < thr
+    out, i, n = [], 0, len(db)
+    while i < n:
+        if low[i]:
+            j = i
+            while j < n and low[j]:
+                j += 1
+            if (j - i) * hop >= min_pause:
+                out.append((round(i * hop, 3), round(j * hop, 3)))
+            i = j
+        else:
+            i += 1
+    return out
+
+
+def detect_silences(wav, hop=0.05):
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(wav), "-f", "s16le", "-ac", "1",
+                          "-ar", "16000", "-"], capture_output=True, check=True).stdout
+    x = np.frombuffer(raw, np.int16).astype(np.float32) / 32768
+    win = int(16000 * hop)
+    n = len(x) // win
+    if n == 0:
+        return []
+    rms = np.sqrt((x[:n * win].reshape(n, win) ** 2).mean(1) + 1e-12)
+    return pauses_from_db(20 * np.log10(rms), hop)
 
 
 def plan_chunks(duration, silences):
@@ -46,6 +71,14 @@ def plan_chunks(duration, silences):
     return [(a, b) for a, b in zip(cuts, cuts[1:]) if b - a > 0.4]
 
 
+_GLUED_TAIL = re.compile(r"\b(\w*?(\w{2,}))([.,!?])\2\3")
+
+
+def clean_asr_text(text):
+    """Fix an ASR artifact where a word's tail is repeated glued to it ("industrialize.ize.")."""
+    return _GLUED_TAIL.sub(r"\1\3", text)
+
+
 def transcribe(pid, video_path, duration, workdir, progress=lambda m: None):
     workdir.mkdir(parents=True, exist_ok=True)
     full = extract_wav(video_path, workdir / "full.wav")
@@ -58,6 +91,7 @@ def transcribe(pid, video_path, duration, workdir, progress=lambda m: None):
         out = meta_api.transcribe_wav(pid, wav, f"phrase {i} [{a:.1f}-{b:.1f}s]")
         turns = [t for t in out.get("turns", []) if t.get("transcript", "").strip()]
         text = " ".join(t["transcript"].strip() for t in turns) or out.get("transcript", "").strip()
+        text = clean_asr_text(text)
         if not text:
             return None
         if turns:

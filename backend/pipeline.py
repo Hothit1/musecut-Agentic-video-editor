@@ -116,9 +116,9 @@ def run_plan(pid, progress):
     for s in plan["segments"]:
         s["layout"] = tracks[s["id"]]["layout"]
         if s["layout"] == "slide" and s["shot_type"] == "a_roll":
-            # speaker is a small webcam tile -> show the shared screen as same-video B-roll
+            # no close-up face (screen share, wide/workshop shot) -> full frame as same-video B-roll
             s["shot_type"], s["b_roll_source"] = "b_roll", "same_video"
-            s["b_roll_description"] = "Slide / screen from the source video (speaker tile small)"
+            s["b_roll_description"] = "Full frame from the source video (no close-up face to crop safely)"
 
     best = max(tracks.values(), key=lambda t: t["best_frame_score"])
     best_t = best["best_frame_t"] or plan["segments"][0]["start_sec"] + 1

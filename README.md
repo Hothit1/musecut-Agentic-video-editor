@@ -58,9 +58,13 @@ with the errors (max 3 attempts), then the job fails with a clear message. No gu
 
 ## Demo video source
 
-Sample input: *Lecture by Robert Citino (11-17-2020)*, Dr. Robert Citino / Humanities Texas,
-https://archive.org/details/lecture-by-robert-citino, **Public Domain Mark 1.0**. The first
-15 minutes were used. It is a public-domain sample, not the creator's own upload to MuseCut.
+Sample input: **"Does this 2,000 Year Old Steam Engine Work?"** by **How To Make Everything**
+(created and hosted by Andy George), licensed **CC BY 3.0**
+(https://creativecommons.org/licenses/by/3.0), via Wikimedia Commons:
+https://commons.wikimedia.org/wiki/File:Does_this_2,000_Year_Old_Steam_Engine_Work_(Aeolipile).webm
+— a real creator's 15-minute video. The short produced by MuseCut is a derivative work: cut,
+reframed to 9:16, captioned and with background music; it carries the same attribution.
+Earlier test runs used the public-domain "Lecture by Robert Citino" (archive.org, PD Mark 1.0).
 
 ## Not in v1 (roadmap)
 

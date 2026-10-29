@@ -99,7 +99,7 @@ def make_thumbnails(pid, video, best_t, title, outdir, progress=lambda m: None):
 
 
 def make_broll(pid, description, path):
-    prompt = (f"Vertical 9:16 illustrative B-roll still for a history short video: {description}. "
+    prompt = (f"Vertical 9:16 illustrative B-roll still for a short video: {description}. "
               f"Photorealistic archival documentary style, no text, no captions, no watermarks.")
     img = meta_api.image_generate(pid, prompt, "b_roll_image")
     fit_9x16(img).save(path)

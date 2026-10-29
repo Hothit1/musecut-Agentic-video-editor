@@ -131,7 +131,7 @@ def e2_transcript(pid, out):
     bullets(d, (80, 200), [
         "FFmpeg finds silences; audio is cut into short phrases (2–15 s).",
         "Each phrase is sent to /v1/asr/transcribe in parallel (8 at a time).",
-        f"This 15-min lecture → {len(units)} phrases in about a minute, ≈ $0.05.",
+        f"This 15-min video → {len(units)} phrases in about a minute, ≈ $0.05.",
         "The model returns turn times, not per-word times — word highlight timing in captions is estimated, and we say so.",
     ], 760, size=28)
     d.rounded_rectangle((900, 190, W - 80, H - 80), radius=18, fill=PANEL, outline=LINE, width=2)

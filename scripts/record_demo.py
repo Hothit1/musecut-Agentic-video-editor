@@ -1,6 +1,6 @@
 """Drive the real UI end-to-end in Chrome and record a guided walkthrough (Playwright).
 
-Usage: python scripts/record_demo.py samples/citino_15min.mp4 out_dir
+Usage: python scripts/record_demo.py samples/htme_aeolipile_1080p.mp4 out_dir
 Writes out_dir/screen.webm and out_dir/marks.json (event times, used to speed up waits).
 On-screen narration + a spotlight outline are injected into the page while recording.
 """
@@ -13,8 +13,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BASE = "http://127.0.0.1:8765"
-PROMPT = ("Make a 60s vertical short about why World War II \"turning points\" are a myth, "
-          "punchy, hook in first 3 seconds")
+PROMPT = "Make a 60s vertical short about whether a 2,000-year-old steam engine (Hero's aeolipile) actually works, punchy, hook in first 3 seconds"
 
 HELPERS = """
 window.__say = (t) => {
@@ -55,7 +54,7 @@ def main(video, out):
 
         # 1 upload
         pg.goto(BASE + "/app/")
-        say("Upload a long video (15-min lecture) + say what short you want")
+        say("A real creator's 15-min video (How To Make Everything, CC BY) + what short you want")
         w(1500)
         pg.set_input_files("#file", video)
         pg.fill("#prompt", "")
@@ -88,7 +87,7 @@ def main(video, out):
         say("Spark wrote the title, on-screen hook, post copy and hashtags — all editable")
         spot(".grid2 .card")
         w(4500)
-        pg.fill("#hook", "One battle didn't win WWII")
+        pg.fill("#hook", "Can a 2,000-year-old engine run?")
         pg.press("#hook", "Tab")
         w(2500)
         say("Muse Image: 3 thumbnails from the best face frame — pick one")

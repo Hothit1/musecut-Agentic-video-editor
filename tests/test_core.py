@@ -142,3 +142,21 @@ def test_smoothing_time_constant_independent_of_fps():
     a = step(2, 5)[-1][1]     # 2 s at 2 fps
     b = step(5, 11)[-1][1]    # 2 s at 5 fps
     assert abs(a - b) < 40
+
+
+def test_adaptive_pauses_with_music_bed():
+    import numpy as np
+    # speech at -18 dB over a -30 dB music bed, with 0.5 s dips to -36 dB every 4 s
+    db = np.full(400, -18.0)
+    db[::7] = -30.0
+    for k in range(40, 400, 80):
+        db[k:k + 10] = -36.0
+    pauses = transcribe.pauses_from_db(db, 0.05)
+    assert len(pauses) == 5
+    assert all(0.45 <= b - a <= 0.65 for a, b in pauses)  # isolated music-bed frames never form a pause
+
+
+def test_clean_asr_glued_tail():
+    assert transcribe.clean_asr_text("It's time to industrialize.ize. 2000 years") == "It's time to industrialize. 2000 years"
+    assert transcribe.clean_asr_text("the steam engine. Then") == "the steam engine. Then"
+    assert transcribe.clean_asr_text("Mississippi. Done") == "Mississippi. Done"

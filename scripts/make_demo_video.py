@@ -83,7 +83,7 @@ def main(demo_dir, pid):
                            ("Agentic Video Editor", 48, (255, 255, 255)),
                            ("Long video  →  editable Edit Plan  →  approved 9:16 short", 44, (79, 140, 255)),
                            ("Muse Voice Transcribe · Muse Spark 1.3 · SAM 3.1 · Muse Image", 34, (200, 167, 255)),
-                           ("Input: 15-min public-domain lecture (Robert Citino, archive.org, PD Mark 1.0)",
+                           ("Input: " + '"Does this 2,000 Year Old Steam Engine Work?" by How To Make Everything (Andy George), CC BY 3.0',
                             26, (154, 161, 178))])
     still(work / "c1.png", 5, work / "p0.mp4"); parts.append("p0.mp4")
     import make_explainers
@@ -125,7 +125,9 @@ def main(demo_dir, pid):
         lines.append((f"{model}:  {v['calls']} calls · ${v['usd']:.3f}", 34, (200, 167, 255)))
     lines += [(f"Total for this short: ${cs['total_usd']:.2f}", 44, (60, 207, 142)),
               ("Plan JSON is schema-validated · render only runs after Approve", 30, (154, 161, 178)),
-              ("Roadmap v2: dubbing, lip-sync, multiple shorts per video", 30, (154, 161, 178))]
+              ("Roadmap v2: dubbing, lip-sync, multiple shorts per video", 30, (154, 161, 178)),
+              ("Source video: \"Does this 2,000 Year Old Steam Engine Work?\" — How To Make Everything "
+               "(Andy George), CC BY 3.0, via Wikimedia Commons", 24, (154, 161, 178))]
     card(work / "c3.png", lines)
     ts = exp.get("time_saved")
     if ts and ts.get("manual_minutes"):
