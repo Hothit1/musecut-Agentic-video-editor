@@ -149,6 +149,57 @@ def sam_boxes(pid, jpeg_bytes, concept, label):
     return boxes
 
 
+_LINE = re.compile(r"<(\d+)f>(.*)")
+_REC = re.compile(r"(?:^|,)(\d+)<\|box;x1=(\d+);y1=(\d+);x2=(\d+);y2=(\d+);w=(\d+);h=(\d+)(?:;c=([\d.]+))?\|>")
+
+
+def parse_sam_video(text):
+    """SAM 3.1 video output -> {frame_index: [(object_id, (x1,y1,x2,y2), conf, (w,h))]}.
+    Frame markers may skip (no objects) and object ids are sparse, so key by both."""
+    frames = {}
+    for line in text.splitlines():
+        m = _LINE.match(line.strip())
+        if not m:
+            continue
+        recs = []
+        for r in _REC.finditer(m.group(2)):
+            oid, x1, y1, x2, y2, w, h = map(int, r.groups()[:7])
+            recs.append((oid, (x1, y1, x2, y2), float(r.group(8) or 1.0), (w, h)))
+        frames[int(m.group(1))] = recs
+    return frames
+
+
+def sam_video(pid, mp4_bytes, concept, label):
+    """Track a concept through a short clip in ONE request (SAM 3.1 video mode)."""
+    t0 = time.time()
+    url = "data:video/mp4;base64," + base64.b64encode(mp4_bytes).decode()
+
+    def call():
+        return client().responses.create(
+            model=SAM_MODEL,
+            input=[{"type": "message", "role": "user", "content": [
+                {"type": "input_text", "text": concept},
+                {"type": "input_video", "video_url": url}]}],
+            metadata={"include_confidence": "true"},
+        )
+
+    try:
+        r = _retry(call)
+    except Exception as e:
+        db.add_cost(pid, model=SAM_MODEL, step="facetrack_video", input_summary=label,
+                    output_summary=str(e)[:200], status="failed",
+                    latency_ms=int((time.time() - t0) * 1000))
+        raise
+    frames = parse_sam_video(r.output_text or "")
+    n = getattr(r.usage, "video_frames_processed", None) or max(len(frames), 1)
+    ids = {rec[0] for recs in frames.values() for rec in recs}
+    db.add_cost(pid, model=SAM_MODEL, step="facetrack_video", input_summary=label,
+                output_summary=f"{len(frames)} frames with '{concept}', {len(ids)} tracked object(s)",
+                units=f"{n} video frames", est_cost_usd=max(n, 50) * PRICES["sam_video_frame"],
+                latency_ms=int((time.time() - t0) * 1000))
+    return frames
+
+
 # ---------- Muse Image ----------
 def _decode_image(b64):
     return Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")

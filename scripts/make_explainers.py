@@ -106,7 +106,7 @@ def e1_pipeline(out):
          "Reads the whole transcript + your prompt and writes the Edit Plan as schema-checked JSON: hook → main → closing, reasons, scores, title, hook, post copy, chapters.",
          "Reasoning model with 1M context and structured JSON output."),
         ("SAM 3.1", "sam-3.1", YELLOW,
-         "Finds the speaker's face from the text prompt \"face\" in every sampled frame. Boxes drive the 9:16 reframe.",
+         "Video mode: tracks the speaker's face through each segment in one request (prompt \"face\", stable object ids). Boxes drive the 9:16 reframe.",
          "Segment Anything with concepts: no face-model training, works on any video."),
         ("Muse Image", "muse-image-1.0", GREEN,
          "Edits the best face frame into 3 thumbnail styles, and generates illustrative B-roll stills.",
@@ -205,7 +205,7 @@ def e4_tracking(pid, out, work):
 
     base, dd = canvas("Step 3 · SAM 3.1 face tracking → smooth 9:16 reframe", "4/7")
     bullets(dd, (80, 190), [
-        "2 frames / second are sent to SAM 3.1 with the prompt \"face\" (red box).",
+        "SAM 3.1 video mode: each segment goes in as ONE 5 fps clip with the prompt \"face\"; stable object ids follow the speaker (red box) — 8 requests instead of ~180, ~5× cheaper.",
         "Crop centre follows the face with EMA smoothing (α 0.35) and a pan-speed cap (160 px/s) — no jitter, no jumps.",
         "Hard rule: the face box must stay fully inside the crop (yellow). If not, the crop is pushed; if impossible, the segment falls back to full frame.",
         "Speaker tiny (Zoom tile on a slide)? → the segment becomes same-video B-roll instead of a bad crop.",

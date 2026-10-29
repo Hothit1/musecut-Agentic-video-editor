@@ -13,7 +13,7 @@ Meta Global AI Developer Hackathon 2026 · Startup track · theme *Build for You
 |---|---|---|
 | Transcribe | `muse-voice-transcribe-1.0` (`/v1/asr/transcribe`) | Audio is split at silences into 2–15 s phrases; each phrase is transcribed → phrase-level timestamps |
 | Edit Plan | `muse-spark-1.3` (Responses API, JSON schema output) | Picks hook → main → closing segments by **phrase id** (never invents timestamps), reasons, scores, title, hook, post copy, hashtags, chapters |
-| Reframe 9:16 | `sam-3.1` (concept prompt `"face"`, 2 fps) | Face boxes → crop path with EMA smoothing + pan speed limit; face must stay fully inside the crop |
+| Reframe 9:16 | `sam-3.1` **video mode** (concept `"face"`, 5 fps proxy clip, 1 request per segment) | Stable object ids follow the speaker through the clip → crop path with EMA smoothing + pan speed limit; face must stay fully inside the crop. ~5× cheaper than per-image calls; per-image mode kept as fallback |
 | Thumbnails + B-roll | `muse-image-1.0` (`/images/edits`, `/images/generations`) | 3 thumbnail options from the best face frame + title; illustrative B-roll stills (Ken Burns) |
 | Render | FFmpeg (not a model) | Cuts, pause shortening, reframe, B-roll, burned-in captions, ducked music |
 

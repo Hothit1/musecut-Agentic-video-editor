@@ -114,3 +114,31 @@ def test_chunker_respects_bounds():
     assert chunks[0][0] == 0 and chunks[-1][1] == 50.0
     for a, b in chunks:
         assert b - a <= transcribe.MAX_UNIT + 1e-6
+
+
+def test_parse_sam_video_sparse_ids_and_skipped_frames():
+    from backend.meta_api import parse_sam_video
+    txt = ("<0f>0<|box;x1=10;y1=10;x2=50;y2=60;w=640;h=328;c=0.9|><|mask;x=0;y=0;data=1,1,~|>,"
+           "2<|box;x1=300;y1=20;x2=320;y2=40;w=640;h=328;c=0.5|><|mask;x=0;y=0;data=1,1,~|>\n"
+           "<2f>2<|box;x1=301;y1=21;x2=321;y2=41;w=640;h=328|><|mask;x=0;y=0;data=1,1,~|>\n")
+    f = parse_sam_video(txt)
+    assert sorted(f) == [0, 2]                      # frame 1 had no objects
+    assert [r[0] for r in f[0]] == [0, 2]           # ids are sparse, kept as-is
+    assert f[2][0][2] == 1.0 and f[0][0][3] == (640, 328)
+
+
+def test_speaker_track_picks_biggest_object_and_scales_to_source():
+    f = {0: [(0, (10, 10, 110, 130), 0.9, (640, 328)), (5, (500, 10, 520, 30), 0.9, (640, 328))],
+         1: [(0, (12, 10, 112, 130), 0.9, (640, 328))]}
+    tr = facetrack.speaker_track(f, 1280, 656)
+    assert sorted(tr) == [0, 1]
+    assert tr[0][:4] == (20, 20, 220, 260)
+
+
+def test_smoothing_time_constant_independent_of_fps():
+    W, H = 1280, 654
+    step = lambda fps, n: facetrack.smooth_crop(
+        [(i / fps, (900, 100, 1000, 300, 0.9)) for i in range(n)], W, H, fps)[0]
+    a = step(2, 5)[-1][1]     # 2 s at 2 fps
+    b = step(5, 11)[-1][1]    # 2 s at 5 fps
+    assert abs(a - b) < 40

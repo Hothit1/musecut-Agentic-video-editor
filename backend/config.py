@@ -34,7 +34,8 @@ MUSIC_DIR = ROOT / "assets" / "music"
 FONT_PATH = os.environ.get("CAPTION_FONT", "/System/Library/Fonts/Supplemental/Impact.ttf")
 
 MAX_DURATION_SEC = 20 * 60
-TRACK_FPS = 2.0
+TRACK_FPS = 2.0         # image-mode fallback sampling
+TRACK_VIDEO_FPS = 5.0   # SAM 3.1 video mode: one request per segment, stable object ids
 OUT_W, OUT_H, OUT_FPS = 1080, 1920, 25
 
 # USD prices from dev.meta.ai/docs/pricing-rate-limits (2026-10-29)
@@ -43,6 +44,7 @@ PRICES = {
     "spark_out_per_m": 4.25,
     "image_each": 0.01,
     "sam_image_each": 0.0025,
+    "sam_video_frame": 0.0002,
     "asr_per_hour": 0.18,
 }
 
