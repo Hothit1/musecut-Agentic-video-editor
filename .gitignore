@@ -10,3 +10,4 @@ demo_out*/
 *.log
 samples/
 .DS_Store
+.playwright-mcp/
