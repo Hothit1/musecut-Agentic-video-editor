@@ -85,7 +85,11 @@ def main(demo_dir, pid):
                            ("Input: 15-min public-domain lecture (Robert Citino, archive.org, PD Mark 1.0)",
                             26, (154, 161, 178))])
     still(work / "c1.png", 5, work / "p0.mp4"); parts.append("p0.mp4")
+    import make_explainers
+    make_explainers.main(pid, work / "explain")
+    parts += [f"explain/e{i}.mp4" for i in range(1, 8)]
 
+    parts.append("p_demo.mp4")
     banner(work / "b1.png", "1 · Upload a 15-min video + prompt")
     screen_part(src, 0, m["click_create"] + 1.5, 1, None, work / "p1.mp4"); parts.append("p1.mp4")
     wait = m["editor_open"] - m["click_create"]
@@ -104,7 +108,10 @@ def main(demo_dir, pid):
     card(work / "c2.png", [("The result (with sound)", 64, (255, 255, 255)),
                            ("9:16 · face always inside the crop · word-highlight captions · ducked music",
                             32, (154, 161, 178))])
-    still(work / "c2.png", 3, work / "p6.mp4"); parts.append("p6.mp4")
+    still(work / "c2.png", 3, work / "p6.mp4")
+    card(work / "c_demo.png", [("Live demo", 80, (255, 255, 255)),
+                               ("The real app, one real run — waiting time is sped up and labelled", 34, (154, 161, 178))])
+    still(work / "c_demo.png", 3, work / "p_demo.mp4"); parts.append("p6.mp4")
     short = ROOT / "data" / pid / "final.mp4"
     ff("-i", str(short), "-filter_complex",
        f"[0:v]split[a][b];[a]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
