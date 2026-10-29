@@ -80,6 +80,7 @@ def main(demo_dir, pid):
     parts = []
 
     card(work / "c1.png", [("MuseCut", 120, (255, 255, 255)),
+                           ("Agentic Video Editor", 48, (255, 255, 255)),
                            ("Long video  →  editable Edit Plan  →  approved 9:16 short", 44, (79, 140, 255)),
                            ("Muse Voice Transcribe · Muse Spark 1.3 · SAM 3.1 · Muse Image", 34, (200, 167, 255)),
                            ("Input: 15-min public-domain lecture (Robert Citino, archive.org, PD Mark 1.0)",

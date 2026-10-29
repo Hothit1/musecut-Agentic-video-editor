@@ -1,4 +1,4 @@
-# MuseCut
+# MuseCut — Agentic Video Editor
 
 **Long video → editable Edit Plan → approved 9:16 short.**
 Upload a long talking-head video and a prompt. MuseCut drafts an Edit Plan with Meta models;

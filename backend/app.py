@@ -10,7 +10,7 @@ from . import db, pipeline, planner
 from .config import DATA_DIR, ROOT
 from .ingest import IngestError, probe
 
-app = FastAPI(title="MuseCut")
+app = FastAPI(title="MuseCut — Agentic Video Editor")
 db.init()
 app.mount("/files", StaticFiles(directory=DATA_DIR), name="files")
 app.mount("/app", StaticFiles(directory=ROOT / "frontend", html=True), name="frontend")
