@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.env.sync.json
+data/
+samples/*.mp4
+__pycache__/
+.venv/
+demo_out/
+*.log
+samples/

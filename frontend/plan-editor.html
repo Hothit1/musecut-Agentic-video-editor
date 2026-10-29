@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MuseCut Plan Editor</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="logo">Muse<span>Cut</span></div>
+  <div class="sub" id="projSub">Plan editor</div>
+  <div class="spacer"></div>
+  <span id="saveState" class="muted small"></span>
+  <button class="approve" id="approve">Approve &amp; Render</button>
+</header>
+<main>
+  <div id="loading" class="status">Loading plan…</div>
+  <div id="editor" class="editor" hidden>
+    <div class="preview">
+      <div class="card">
+        <h2>Preview</h2>
+        <div class="stage"><video id="src" muted playsinline preload="auto"></video><canvas id="overlay"></canvas></div>
+        <div class="vert">
+          <canvas id="vert" width="270" height="480"></canvas>
+          <div class="small muted">
+            <div><b style="color:var(--text)">9:16 crop</b> computed from SAM 3.1 face boxes, EMA-smoothed, face always inside.</div>
+            <div style="margin-top:6px" id="nowSeg"></div>
+            <div class="row" style="margin-top:8px"><button id="playAll">▶ Play kept cut</button><button id="stop">■</button></div>
+          </div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+        <div class="durbar"><span id="dur"></span>
+          <span>Target <select id="target" style="width:auto;padding:2px 6px"><option value="60">60 s</option><option value="90">90 s</option></select></span></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>Background music</h2>
+        <div class="row"><label style="margin:0"><input type="checkbox" id="musicOn"> Royalty-free track (auto-ducked under voice)</label></div>
+        <div class="row" style="margin-top:8px"><span class="small muted">Volume</span><input type="range" id="musicVol" min="0" max="0.6" step="0.01" style="flex:1"><span id="musicVolTxt" class="small"></span></div>
+      </div>
+    </div>
+    <div>
+      <div class="grid2">
+        <div class="card">
+          <h2>Title, hook &amp; post</h2>
+          <label>Title</label><input type="text" id="title">
+          <label>On-screen hook (first 3 s)</label><input type="text" id="hook">
+          <label>Post caption</label><textarea id="post" rows="3"></textarea>
+          <label>Hashtags</label><input type="text" id="tags">
+        </div>
+        <div class="card">
+          <h2>Thumbnail — pick 1 of 3</h2>
+          <div class="thumbs" id="thumbs"></div>
+          <h2 style="margin-top:16px">Chapters (source video)</h2>
+          <ol class="chapters small" id="chapters"></ol>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <h2>Segments — keep / drop / reorder, edit captions, B-roll</h2>
+        <div id="segs"></div>
+      </div>
+    </div>
+  </div>
+  <div id="resultWrap" hidden style="margin-top:24px">
+    <div class="card">
+      <h2>Render</h2>
+      <div id="renderStatus" class="status"></div>
+      <div id="result" class="result" hidden style="margin-top:16px"></div>
+    </div>
+  </div>
+</main>
+<script src="app.js"></script>
+<script>MuseCut.initEditor();</script>
+</body>
+</html>

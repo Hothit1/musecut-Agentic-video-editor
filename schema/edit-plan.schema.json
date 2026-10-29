@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://musecut.local/edit-plan.schema.json",
+  "title": "MuseCut Edit Plan",
+  "type": "object",
+  "required": ["project_id", "prompt", "target_duration_sec", "segments", "captions",
+               "thumbnail_options", "thumbnail_selected", "music", "title", "post_copy", "status"],
+  "properties": {
+    "project_id": {"type": "string", "minLength": 1},
+    "prompt": {"type": "string", "minLength": 1},
+    "target_duration_sec": {"enum": [60, 90]},
+    "segments": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "role", "start_sec", "end_sec", "keep", "reason", "transcript",
+                     "shot_type", "b_roll_source", "b_roll_description"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^seg_[0-9]{2,}$"},
+          "role": {"enum": ["hook", "main", "closing"]},
+          "start_sec": {"type": "number", "minimum": 0},
+          "end_sec": {"type": "number", "minimum": 0},
+          "keep": {"type": "boolean"},
+          "reason": {"type": "string", "minLength": 1},
+          "transcript": {"type": "string"},
+          "shot_type": {"enum": ["a_roll", "b_roll"]},
+          "b_roll_source": {"enum": ["same_video", "generated_image", null]},
+          "b_roll_description": {"type": ["string", "null"]},
+          "b_roll_image": {"type": ["string", "null"]},
+          "score": {"type": "integer", "minimum": 1, "maximum": 5},
+          "unit_ids": {"type": "array", "items": {"type": "string"}},
+          "layout": {"enum": ["face", "slide", null]},
+          "auto_note": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "captions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["segment_id", "text", "start_sec", "end_sec"],
+        "properties": {
+          "id": {"type": "string"},
+          "segment_id": {"type": "string"},
+          "text": {"type": "string"},
+          "start_sec": {"type": "number"},
+          "end_sec": {"type": "number"}
+        }
+      }
+    },
+    "thumbnail_options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "image_path", "title_text"],
+        "properties": {
+          "id": {"type": "string"}, "image_path": {"type": "string"},
+          "title_text": {"type": "string"}, "style": {"type": "string"},
+          "source": {"enum": ["muse_image", "fallback_pillow"]}
+        }
+      }
+    },
+    "thumbnail_selected": {"type": ["string", "null"]},
+    "music": {
+      "type": "object",
+      "required": ["enabled", "track_id", "volume"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "track_id": {"type": "string"},
+        "volume": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "title": {"type": "string"},
+    "hook_text": {"type": "string"},
+    "post_copy": {"type": "string"},
+    "hashtags": {"type": "array", "items": {"type": "string"}},
+    "chapters": {
+      "type": "array",
+      "items": {"type": "object", "required": ["start_sec", "title"],
+                "properties": {"start_sec": {"type": "number"}, "title": {"type": "string"}}}
+    },
+    "status": {"enum": ["draft", "approved"]}
+  }
+}

@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+jsonschema
+openai
+requests
+pillow
+numpy
+pytest
+httpx
+playwright
