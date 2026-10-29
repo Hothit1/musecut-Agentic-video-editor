@@ -56,7 +56,7 @@ def still(png, dur, out):
 
 def screen_part(src, a, b, speed, label_png, out):
     vf = (f"[0:v]trim={a}:{b},setpts=(PTS-STARTPTS)/{speed},fps={FPS},"
-          f"scale=1728:1080,pad={W}:{H}:96:0:color=0x0e0f13[s]")
+          f"crop=1536:864:0:0,scale={W}:{H}:flags=lanczos[s]")
     if label_png:
         vf += f";[s][1:v]overlay=0:0[v]"
         ins = ["-i", str(src), "-loop", "1", "-i", str(label_png)]
@@ -87,20 +87,19 @@ def main(demo_dir, pid):
     still(work / "c1.png", 5, work / "p0.mp4"); parts.append("p0.mp4")
 
     banner(work / "b1.png", "1 · Upload a 15-min video + prompt")
-    screen_part(src, 0, m["click_create"] + 1.5, 1, work / "b1.png", work / "p1.mp4"); parts.append("p1.mp4")
+    screen_part(src, 0, m["click_create"] + 1.5, 1, None, work / "p1.mp4"); parts.append("p1.mp4")
     wait = m["editor_open"] - m["click_create"]
-    banner(work / "b2.png", f"2 · Plan job: transcribe → Spark plan → SAM 3.1 face track → Muse Image "
-                            f"({wait/60:.1f} min real time, sped up)")
+    banner(work / "b2.png", f">> {wait/60:.1f} min of real processing, sped up")
     screen_part(src, m["click_create"] + 1.5, m["editor_open"], max(1, wait / 9), work / "b2.png",
                 work / "p2.mp4"); parts.append("p2.mp4")
     banner(work / "b3.png", "3 · Edit the plan: preview 9:16 crop, edit captions, drop segments, pick thumbnail")
-    screen_part(src, m["editor_open"], m["approve"] + 1, 1, work / "b3.png", work / "p3.mp4"); parts.append("p3.mp4")
+    screen_part(src, m["editor_open"], m["approve"] + 1, 1, None, work / "p3.mp4"); parts.append("p3.mp4")
     rw = m["render_done"] - m["approve"] - 1
-    banner(work / "b4.png", f"4 · Approve locks the plan → FFmpeg render ({rw:.0f} s real time, sped up)")
+    banner(work / "b4.png", f">> {rw:.0f} s render, sped up")
     screen_part(src, m["approve"] + 1, m["render_done"], max(1, rw / 6), work / "b4.png",
                 work / "p4.mp4"); parts.append("p4.mp4")
     banner(work / "b5.png", "5 · Export: MP4 + SRT + thumbnail + plan JSON + cost log + post copy")
-    screen_part(src, m["render_done"], m["end"], 1, work / "b5.png", work / "p5.mp4"); parts.append("p5.mp4")
+    screen_part(src, m["render_done"], m["end"], 1, None, work / "p5.mp4"); parts.append("p5.mp4")
 
     card(work / "c2.png", [("The result (with sound)", 64, (255, 255, 255)),
                            ("9:16 · face always inside the crop · word-highlight captions · ducked music",
