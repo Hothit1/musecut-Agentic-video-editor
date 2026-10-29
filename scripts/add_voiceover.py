@@ -1,8 +1,12 @@
 """Add an English voice-over (macOS `say`) and a quiet CC0 music bed to the assembled demo.
 
 Usage: python scripts/add_voiceover.py demo_out_v7
+Optional: VO_TTS_CMD="python3 /path/leo-voice/tools/tts_gemini.py" uses an external TTS
+(called as CMD "text" out.mp3) instead of `say`, e.g. the creator's own cloned Gemini voice.
 Reads demo_dir/parts/list.txt for part order/durations; the final short (p7) keeps its own audio.
 """
+import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -58,16 +62,24 @@ def main(demo_dir):
     vo.mkdir(exist_ok=True)
     ins, fc, labels = [], [], []
     for i, (part, off, text) in enumerate(LINES):
-        f = vo / f"l{i:02d}.aiff"
-        subprocess.run(["say", "-v", VOICE, "-r", str(RATE), "-o", str(f), text], check=True)
+        cmd = os.environ.get("VO_TTS_CMD")
+        if cmd:
+            f = vo / f"g{i:02d}.mp3"
+            if not f.exists():
+                subprocess.run([*shlex.split(cmd), text, str(f)], check=True, capture_output=True)
+        else:
+            f = vo / f"l{i:02d}.aiff"
+            subprocess.run(["say", "-v", VOICE, "-r", str(RATE), "-o", str(f), text], check=True)
         at = start[part][0] + off
         nxt = [start[p][0] + o for p, o, _ in LINES[i + 1:i + 2]] or [total]
         room = nxt[0] - at - 0.2
         d = dur(f)
+        tempo = 1.0
         if d > room:
-            print(f"WARN line {i} {d:.1f}s > room {room:.1f}s: {text[:40]}")
+            tempo = d / room
+            print(f"line {i}: {d:.1f}s > room {room:.1f}s -> tempo {tempo:.2f}{' (TOO FAST)' if tempo > 1.25 else ''}")
         ins += ["-i", str(f)]
-        fc.append(f"[{i + 1}:a]aresample=48000,aformat=channel_layouts=stereo,adelay={int(at * 1000)}:all=1[v{i}]")
+        fc.append(f"[{i + 1}:a]atempo={tempo:.3f},aresample=48000,aformat=channel_layouts=stereo,adelay={int(at * 1000)}:all=1[v{i}]")
         labels.append(f"[v{i}]")
     n = len(LINES)
     s7, d7 = start["p7.mp4"]
@@ -77,7 +89,7 @@ def main(demo_dir):
     fc.append(f"[{n + 1}:a]atrim=0:{total:.3f},aresample=48000,aformat=channel_layouts=stereo,"
               f"volume='if(between(t,{s7 - 0.5:.2f},{s7 + d7 + 0.5:.2f}),0,0.25)':eval=frame[bed]")
     fc.append(f"[0:a]aresample=48000[orig]")
-    fc.append("".join(labels) + f"amix=inputs={n}:normalize=0,volume=6,asplit[vo][vosc]")
+    fc.append("".join(labels) + f"amix=inputs={n}:normalize=0,volume={os.environ.get("VO_GAIN", "6")},asplit[vo][vosc]")
     fc.append("[bed][vosc]sidechaincompress=threshold=0.03:ratio=6:attack=20:release=400[duck]")
     fc.append("[orig][duck][vo]amix=inputs=3:normalize=0,alimiter=limit=0.95[a]")
     out = dd / "musecut_demo_vo.mp4"
