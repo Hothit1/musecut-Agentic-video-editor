@@ -12,9 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 W, H, FPS = 1920, 1080, 30
-TEMPO = 1.05        # voice slightly faster, still natural
-GAP = 0.3           # breath after each line
-SHORT_SEC = 25.0    # how much of the final short to play
+TEMPO = 1.10        # voice a little faster, still natural
+GAP = 0.2           # breath after each line
+SHORT_SEC = None    # play the whole final short
 LIMIT = 180.0
 
 # (voice clip index, part, window start, window end) — window is in part-local seconds
@@ -30,16 +30,13 @@ PLAN = [
     (8, "p_demo.mp4", 0, 3),
     (9, "p1.mp4", 0, None),
     (10, "p2.mp4", 0, None),
-    (11, "p3.mp4", 0, 4.5),
-    (12, "p3.mp4", 4.5, 13.5),
-    (13, "p3.mp4", 13.5, 21),
+    (12, "p3.mp4", 0, 21),
     (14, "p3.mp4", 21, 34),
     (16, "p3.mp4", 34, 50),
     (17, "p3.mp4", 50, 66),
     (19, "p3.mp4", 79, None),
     (20, "p4.mp4", 0, None),
     (21, "p5.mp4", 0, 12),
-    (23, "p6.mp4", 0, None),
     ("short", "p7.mp4", 0, SHORT_SEC),
     (24, "p9.mp4", 0, None),
     (25, "p8.mp4", 0, None),
