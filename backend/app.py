@@ -36,8 +36,8 @@ def _url(path):
 def create_project(video: UploadFile = File(...), prompt: str = Form(...),
                    target_duration_sec: int = Form(60),
                    manual_edit_minutes: int | None = Form(None)):
-    if target_duration_sec not in (60, 90):
-        raise HTTPException(422, "target_duration_sec must be 60 or 90")
+    if target_duration_sec not in (30, 60, 90):
+        raise HTTPException(422, "target_duration_sec must be 30, 60 or 90")
     if not prompt.strip():
         raise HTTPException(422, "prompt is required")
     import uuid

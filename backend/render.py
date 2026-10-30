@@ -150,16 +150,18 @@ def render(pid, plan, src, probe, tracks, outdir, progress=lambda m: None):
     music = plan["music"]
     track_file = MUSIC_DIR / f"{music['track_id']}.mp3"
     inputs = ["-i", str(joined), "-framerate", str(cap.CAP_FPS), "-i", pattern]
-    vchain = "[1:v]fps=%d,format=rgba[cap];[0:v][cap]overlay=0:0:format=auto:shortest=1[v]" % OUT_FPS
+    vchain = (f"[1:v]fps={OUT_FPS},format=rgba[cap];[0:v][cap]overlay=0:0:format=auto:shortest=1,"
+              f"fade=t=out:st={max(total - 0.6, 0):.3f}:d=0.6[v]")
     if music["enabled"] and track_file.exists():
         inputs += ["-stream_loop", "-1", "-i", str(track_file)]
         vol = music["volume"] * 2.0
         achain = (f"[2:a]atrim=0:{total:.3f},volume={vol:.3f},afade=t=in:d=1,"
                   f"afade=t=out:st={max(total - 2, 0):.3f}:d=2[m];[0:a]asplit[v1][v2];"
                   f"[m][v2]sidechaincompress=threshold=0.015:ratio=12:attack=15:release=400[md];"
-                  f"[v1][md]amix=inputs=2:normalize=0:duration=first[a]")
+                  f"[v1][md]amix=inputs=2:normalize=0:duration=first[a0]")
     else:
-        achain = "[0:a]anull[a]"
+        achain = "[0:a]anull[a0]"
+    achain += f";[a0]afade=t=out:st={max(total - 0.5, 0):.3f}:d=0.5[a]"
     ff([*inputs, "-filter_complex", f"{vchain};{achain}", "-map", "[v]", "-map", "[a]",
         "-t", f"{total:.3f}", *ENC, "-movflags", "+faststart", str(final)])
     (outdir / "render_log.json").write_text(json.dumps({"duration": total, "notes": log}, indent=1))

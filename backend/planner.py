@@ -4,6 +4,7 @@ Spark only picks phrase-unit ids (it never writes timestamps); the server maps i
 start/end from the transcript, validates, then fits the plan to the target duration.
 """
 import json
+import re
 
 import jsonschema
 
@@ -43,6 +44,10 @@ Rules:
 - Story order: first segment role "hook" (a strong, self-contained line that grabs attention
   in the first 3 seconds), then "main" segments (problem -> key points), last "closing"
   (conclusion / takeaway / call to action). You MAY reorder segments relative to the source.
+- The closing segment must END on a complete concluding sentence (an answer, verdict or
+  takeaway). Never end the short on a setup line, a question left open, or a "but..." that
+  continues in the next sentence of the source.
+- For a 30 s target: hook + 1-2 main + closing, each segment 3-10 s.
 - Cut filler, rambling, repetition, and anything off-topic for the user's prompt.
 - Each segment is a contiguous range start_unit..end_unit (inclusive), ideally 4-15 s, and
   must read as complete thoughts (don't start or end mid-sentence when avoidable).
@@ -55,6 +60,9 @@ Rules:
 - post_copy: 1-3 sentence caption for the post. hashtags: 4-8 tags without '#'.
 - chapters: 4-8 chapters covering the WHOLE source video (start_unit + short title).
 Return JSON only."""
+
+
+CLOSING_ERR = "closing must end on a complete sentence"
 
 
 class PlanError(ValueError):
@@ -87,6 +95,12 @@ def check_spark(out, units):
         used |= rng
     if out["segments"] and out["segments"][0]["role"] != "hook":
         errs.append("first segment must have role 'hook'")
+    closing = [x for x in out["segments"] if x["role"] == "closing"]
+    if closing and closing[-1]["end_unit"] in idx:
+        last = units[idx[closing[-1]["end_unit"]]]["text"].rstrip()
+        if not re.search(r"[.!?][\"')\]]?$", last):
+            errs.append(f"{CLOSING_ERR}: {closing[-1]['end_unit']} ends mid-sentence (\"...{last[-50:]}\"); "
+                        f"end the closing on a unit that finishes a sentence")
     for c in out["chapters"]:
         if c["start_unit"] not in idx:
             errs.append(f"chapter '{c['title']}': unknown unit {c['start_unit']}")
@@ -111,7 +125,38 @@ def ask_spark(pid, units, prompt, target):
         last_errs = check_spark(out, units)
         if not last_errs:
             return out
+        if attempt == 2 and all(e.startswith(CLOSING_ERR) for e in last_errs):
+            return out  # soft rule: an imperfect ending must not fail the whole job
     raise PlanError("Spark plan failed validation: " + "; ".join(last_errs[:5]))
+
+
+def trim_dangling_tail(u, max_frac=0.65):
+    """Silence-cut phrases can carry the first words of the next sentence ("...not really. The
+    steam engines"). Cut the unit back to its last sentence end, estimating the time from the
+    share of characters; only when the dangling part is short. Returns a new unit dict."""
+    text = u["text"].rstrip()
+    m = None
+    for m in re.finditer(r"[.!?](?=\s+\S)", text):
+        pass
+    if not m:
+        return u
+    keep, tail = text[:m.end()], text[m.end():].strip()
+    if not tail or len(tail) > max_frac * len(text):
+        return u
+    end = u["start"] + (u["end"] - u["start"]) * len(keep) / len(text) + 0.15
+    return {**u, "text": keep, "end": round(min(end, u["end"]), 3)}
+
+
+def end_on_sentence(us):
+    """The short's last words must finish a sentence: walk back to the last unit that contains a
+    sentence end and cut there (whatever follows it is dropped)."""
+    for k in range(len(us) - 1, -1, -1):
+        text = us[k]["text"].rstrip()
+        if re.search(r"[.!?][\"')\]]?$", text):
+            return us[:k + 1]
+        if re.search(r"[.!?](?=\s+\S)", text):
+            return us[:k] + [trim_dangling_tail(us[k], max_frac=1.0)]
+    return us
 
 
 def build_plan(pid, prompt, target, units, spark):
@@ -119,6 +164,9 @@ def build_plan(pid, prompt, target, units, spark):
     segments, captions = [], []
     for n, s in enumerate(spark["segments"], 1):
         us = units[idx[s["start_unit"]]: idx[s["end_unit"]] + 1]
+        us = us[:-1] + [trim_dangling_tail(us[-1])]  # never end a segment on a half sentence
+        if s["role"] == "closing":
+            us = end_on_sentence(us)
         sid = f"seg_{n:02d}"
         desc = (s.get("b_roll_description") or "").strip() or None
         segments.append({

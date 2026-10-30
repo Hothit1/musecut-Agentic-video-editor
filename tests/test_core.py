@@ -4,7 +4,7 @@ import pytest
 
 from backend import captions, facetrack, planner, transcribe
 
-UNITS = [{"id": f"u{i:03d}", "start": i * 5.0, "end": i * 5.0 + 4.5, "text": f"sentence {i} uh words"}
+UNITS = [{"id": f"u{i:03d}", "start": i * 5.0, "end": i * 5.0 + 4.5, "text": f"sentence {i} uh words."}
          for i in range(1, 31)]
 
 
@@ -160,3 +160,31 @@ def test_clean_asr_glued_tail():
     assert transcribe.clean_asr_text("It's time to industrialize.ize. 2000 years") == "It's time to industrialize. 2000 years"
     assert transcribe.clean_asr_text("the steam engine. Then") == "the steam engine. Then"
     assert transcribe.clean_asr_text("Mississippi. Done") == "Mississippi. Done"
+
+
+def test_trim_dangling_tail():
+    u = {"id": "u1", "start": 10.0, "end": 20.0,
+         "text": "I have to say it's not really a shortcut to industry at all. The steam engines"}
+    v = planner.trim_dangling_tail(u)
+    assert v["text"].endswith("at all.") and 10.0 < v["end"] < 20.0
+    whole = {"id": "u2", "start": 0.0, "end": 5.0, "text": "A full sentence. Then a long second part that is most of it"}
+    assert planner.trim_dangling_tail(whole) == whole  # tail too long: keep
+    assert planner.trim_dangling_tail({**u, "text": "No sentence end here"})["end"] == 20.0
+
+
+def test_closing_must_end_on_sentence():
+    units = [dict(u) for u in UNITS]
+    units[20]["text"] = "and that is why it matters"  # u021, closing end, no full stop
+    errs = planner.check_spark(spark_ok(), units)
+    assert any(e.startswith(planner.CLOSING_ERR) for e in errs)
+    units[20]["text"] = "and that is why it matters."
+    assert planner.check_spark(spark_ok(), units) == []
+
+
+def test_end_on_sentence_walks_back():
+    us = [{"id": "a", "start": 0.0, "end": 4.0, "text": "I have to say it's not really. The steam engines"},
+          {"id": "b", "start": 4.0, "end": 8.0, "text": "that came later work on a different principle"}]
+    out = planner.end_on_sentence(us)
+    assert len(out) == 1 and out[0]["text"] == "I have to say it's not really." and out[0]["end"] < 4.0
+    ok = [{"id": "c", "start": 0.0, "end": 2.0, "text": "Done."}]
+    assert planner.end_on_sentence(ok) == ok
