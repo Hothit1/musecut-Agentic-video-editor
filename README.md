@@ -2,7 +2,7 @@
 
 **Long video → editable Edit Plan → approved 9:16 short.**
 Upload a long talking-head video and a prompt. MuseCut drafts an Edit Plan with Meta models;
-you edit it (segments, captions, B-roll, thumbnail, music, 60/90 s) and only after **Approve**
+you edit it (segments, captions, B-roll, thumbnail, music, 30/60/90 s) and only after **Approve**
 does it render the final vertical MP4. Nothing is rendered from an unapproved plan.
 
 Meta Global AI Developer Hackathon 2026 · Startup track · theme *Build for Your World*.
@@ -43,7 +43,7 @@ Tests: `.venv/bin/python -m pytest -q tests`
 ## API
 
 ```
-POST   /api/projects              multipart: video, prompt, target_duration_sec(60|90) -> project_id
+POST   /api/projects              multipart: video, prompt, target_duration_sec(30|60|90) -> project_id
 POST   /api/projects/{id}/plan    start plan job (transcribe -> Spark -> SAM -> Muse Image)
 GET    /api/projects/{id}/plan    plan + job status + crop tracks
 PATCH  /api/projects/{id}/plan    edit segments/captions(text only)/title/hook/post/thumbnail/music/target
