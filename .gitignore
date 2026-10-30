@@ -11,3 +11,4 @@ demo_out*/
 samples/
 .DS_Store
 .playwright-mcp/
+scripts/
